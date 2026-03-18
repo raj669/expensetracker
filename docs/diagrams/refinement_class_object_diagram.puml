@@ -1,0 +1,141 @@
+@startuml Refinement of Class and Object Diagram - Expense Tracker
+
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor #F9F9FF
+    BorderColor #5B2D8E
+    ArrowColor #5B2D8E
+    FontColor #222222
+    HeaderBackgroundColor #D8C8F0
+}
+skinparam object {
+    BackgroundColor #EDF7ED
+    BorderColor #2E7D32
+    ArrowColor #2E7D32
+    FontColor #222222
+    HeaderBackgroundColor #C8E6C9
+}
+skinparam title {
+    FontSize 18
+    FontStyle Bold
+}
+
+title Refinement of Class and Object Diagram – Expense Tracker
+
+' =====================
+' REFINED CLASS DIAGRAM
+' =====================
+
+package "Refined Classes" {
+
+    class User {
+        - userID : String  {readOnly}
+        - username : String
+        - email : String
+        - password : String  {encrypted}
+        --
+        + registerUser(email: String, password: String, username: String) : void
+        + loginUser(email: String, password: String) : UserCredential
+        + logoutUser() : void
+        + getDisplayName() : String
+    }
+
+    class Expense {
+        - expenseID : String  {readOnly}
+        - title : String
+        - amount : double  {> 0}
+        - category : String
+        - date : String
+        - timestamp : DateTime
+        - ownerID : String
+        --
+        + addExpense(title: String, amount: double, category: String) : void
+        + deleteExpense(expenseID: String) : void
+        + viewExpense() : Map<String, dynamic>
+        + getTotalExpenses(expenses: List<Expense>) : double
+    }
+
+    class Category {
+        - categoryID : String  {readOnly}
+        - categoryName : String
+        --
+        + addCategory(name: String) : void
+        + updateCategory(categoryID: String, name: String) : void
+        + getCategories() : List<Category>
+        + getDefaultCategories() : List<String>
+    }
+
+    class AuthService {
+        - firebaseAuth : FirebaseAuth
+        --
+        + signIn(email: String, password: String) : Future<UserCredential>
+        + signUp(email: String, password: String, username: String) : Future<UserCredential>
+        + signOut() : Future<void>
+        + getCurrentUser() : User?
+    }
+
+    class ExpenseService {
+        - firestore : FirebaseFirestore
+        - userID : String
+        --
+        + addExpense(data: Map) : Future<void>
+        + deleteExpense(expenseID: String) : Future<void>
+        + getExpensesStream() : Stream<QuerySnapshot>
+        + calculateTotal(docs: List) : double
+    }
+
+    User "1" --> "0..*" Expense : owns >
+    User "1" --> "0..*" Category : manages >
+    Expense "0..*" --> "1" Category : classified by >
+    User ..> AuthService : uses >
+    Expense ..> ExpenseService : managed by >
+}
+
+' =====================
+' OBJECT INSTANCES
+' =====================
+
+package "Object Instances (Example)" {
+
+    object user1 <<User>> {
+        userID = "uid_abc123"
+        username = "Garima"
+        email = "garima@example.com"
+        password = "**encrypted**"
+    }
+
+    object expense1 <<Expense>> {
+        expenseID = "exp_001"
+        title = "Lunch"
+        amount = 12.50
+        category = "Food"
+        date = "2026/02/12 - Thursday"
+        ownerID = "uid_abc123"
+    }
+
+    object expense2 <<Expense>> {
+        expenseID = "exp_002"
+        title = "Bus Ticket"
+        amount = 2.00
+        category = "Transport"
+        date = "2026/02/12 - Thursday"
+        ownerID = "uid_abc123"
+    }
+
+    object category1 <<Category>> {
+        categoryID = "cat_01"
+        categoryName = "Food"
+    }
+
+    object category2 <<Category>> {
+        categoryID = "cat_02"
+        categoryName = "Transport"
+    }
+
+    user1 --> expense1 : records
+    user1 --> expense2 : records
+    expense1 --> category1 : belongs to
+    expense2 --> category2 : belongs to
+}
+
+@enduml

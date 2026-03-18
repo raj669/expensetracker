@@ -1,0 +1,70 @@
+@startuml Sequence Diagram - Expense Tracker
+
+skinparam sequenceArrowColor #5B2D8E
+skinparam sequenceLifeLineBorderColor #5B2D8E
+skinparam sequenceParticipantBorderColor #5B2D8E
+skinparam sequenceParticipantBackgroundColor #F0EBF8
+skinparam sequenceGroupBorderColor #999999
+skinparam title {
+    FontSize 18
+    FontStyle Bold
+}
+
+title Sequence Diagram – Expense Tracker Application
+
+actor User
+participant "LoginScreen" as LS
+participant "SignupScreen" as SS
+participant "HomeScreen" as HS
+participant "AddExpenseScreen" as AES
+participant "FirebaseAuth" as FA
+participant "FirebaseFirestore" as FF
+
+== User Registration ==
+User -> SS : Open Sign Up screen
+SS -> FA : createUserWithEmailAndPassword(email, password)
+FA --> SS : UserCredential (success)
+SS -> FF : save user profile (username, email)
+FF --> SS : confirmation
+SS --> User : Navigate to Login screen
+
+== User Login ==
+User -> LS : Enter email & password
+LS -> FA : signInWithEmailAndPassword(email, password)
+FA --> LS : UserCredential (success)
+LS --> User : Navigate to HomeScreen
+
+== View Expenses ==
+User -> HS : Open HomeScreen
+HS -> FF : getExpensesStream() (real-time listener)
+FF --> HS : Stream<QuerySnapshot>
+HS --> User : Display expense list + total
+
+== Add Expense ==
+User -> HS : Tap "+" button
+HS --> User : Navigate to AddExpenseScreen
+User -> AES : Enter title, amount, category
+AES -> FF : add({title, amount, category, date, timestamp})
+FF --> AES : DocumentReference (success)
+AES --> User : Navigate back to HomeScreen
+HS -> FF : Stream updated automatically
+FF --> HS : Updated expense list
+HS --> User : Display updated total & list
+
+== Delete Expense ==
+User -> HS : Long-press to select expense(s)
+HS --> User : Show selection mode UI
+User -> HS : Tap delete icon
+HS --> User : Confirm deletion dialog
+User -> HS : Confirm
+HS -> FF : delete(docId)
+FF --> HS : Confirmation
+HS --> User : Updated expense list
+
+== Logout ==
+User -> HS : Tap logout icon
+HS -> FA : signOut()
+FA --> HS : Success
+HS --> User : Navigate to LoginScreen
+
+@enduml

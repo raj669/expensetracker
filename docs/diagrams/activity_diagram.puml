@@ -1,0 +1,89 @@
+@startuml Activity Diagram - Expense Tracker
+
+skinparam activity {
+    BackgroundColor #F0EBF8
+    BorderColor #5B2D8E
+    ArrowColor #5B2D8E
+    StartColor #5B2D8E
+    EndColor #5B2D8E
+    DiamondBackgroundColor #D8C8F0
+    DiamondBorderColor #5B2D8E
+}
+skinparam title {
+    FontSize 18
+    FontStyle Bold
+}
+
+title Activity Diagram – Expense Tracker Application
+
+start
+
+:Open Expense Tracker Application;
+
+:Display Login Screen;
+
+:Enter Email and Password;
+
+if (Fields Empty?) then (yes)
+    :Show "Please fill all fields" message;
+    :Return to Login Screen;
+else (no)
+    :Call Firebase Authentication;
+    if (Login Successful?) then (no)
+        :Show "Login failed" error message;
+        :Return to Login Screen;
+    else (yes)
+        :Navigate to Home Screen;
+        :Load Expense Records from Firestore (real-time stream);
+        :Display Total Expenses and Expense List;
+
+        repeat
+            :Wait for User Action;
+
+            if (Action?) then (Add Expense)
+                :Navigate to Add Expense Screen;
+                :Enter Title, Amount, Category;
+                if (Fields Valid?) then (no)
+                    :Show validation error;
+                else (yes)
+                    :Save Expense to Firestore;
+                    :Navigate back to Home Screen;
+                    :Refresh Expense List & Total;
+                endif
+
+            elseif (Action?) then (Select Expenses)
+                :Enable Selection Mode;
+                :Select One or More Expenses;
+                :Tap Delete Icon;
+                :Show Confirmation Dialog;
+                if (Confirmed?) then (yes)
+                    :Delete Selected Expenses from Firestore;
+                    :Refresh Expense List & Total;
+                else (no)
+                    :Cancel Deletion;
+                endif
+
+            elseif (Action?) then (Delete Single Expense)
+                :Tap Delete Icon on Expense;
+                :Delete Expense from Firestore;
+                :Refresh Expense List & Total;
+
+            elseif (Action?) then (Logout)
+                :Call Firebase Sign Out;
+                :Navigate to Login Screen;
+                stop
+
+            else (Refresh)
+                :Reload Expense Data;
+                :Update Display;
+            endif
+
+        repeat while (User Continues?) is (yes)
+        -> no;
+
+        :Exit Application;
+        stop
+    endif
+endif
+
+@enduml
