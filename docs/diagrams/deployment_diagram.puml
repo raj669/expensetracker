@@ -1,0 +1,79 @@
+@startuml Deployment Diagram - Expense Tracker
+
+skinparam node {
+    BackgroundColor #F0EBF8
+    BorderColor #5B2D8E
+    FontColor #222222
+}
+skinparam component {
+    BackgroundColor #FAF8FF
+    BorderColor #7B5EA7
+    FontColor #222222
+}
+skinparam database {
+    BackgroundColor #EDF7ED
+    BorderColor #2E7D32
+    FontColor #222222
+}
+skinparam cloud {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    FontColor #222222
+}
+skinparam title {
+    FontSize 18
+    FontStyle Bold
+}
+
+title Deployment Diagram – Expense Tracker Application
+
+node "User Device\n(Android Smartphone)" as Device {
+    component "Expense Tracker\nFlutter App" as App {
+        component "Login Screen" as LS
+        component "Signup Screen" as SS
+        component "Home Screen" as HS
+        component "Add Expense Screen" as AES
+    }
+    component "Flutter Runtime\n(Dart VM)" as FlutterRuntime
+    App --> FlutterRuntime : runs on
+}
+
+cloud "Google Firebase Cloud" as FirebaseCloud {
+    node "Firebase Authentication Server" as AuthServer {
+        component "Auth Service\n(Email/Password)" as AuthSvc
+    }
+
+    node "Firebase Firestore Server" as FirestoreServer {
+        database "Cloud Firestore\nNoSQL Database" as Firestore {
+            component "users collection" as UsersCol
+            component "expenses sub-collection" as ExpensesCol
+        }
+    }
+
+    AuthServer -[hidden]right- FirestoreServer
+}
+
+' Communication paths
+App ..> AuthSvc : HTTPS (sign in / sign up / sign out)
+App ..> Firestore : HTTPS / WebSocket\n(add / delete / stream expenses)
+AuthSvc ..> UsersCol : stores user profile
+Firestore --> ExpensesCol : manages expense records
+
+note right of App
+  Developed with Flutter SDK
+  Communicates with Firebase
+  via FlutterFire plugins:
+  • firebase_auth
+  • cloud_firestore
+  • firebase_core
+end note
+
+note right of FirebaseCloud
+  Google-managed infrastructure
+  Provides:
+  • Secure user authentication
+  • Real-time data sync
+  • Cloud data storage
+end note
+
+@enduml

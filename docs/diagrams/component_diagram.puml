@@ -1,0 +1,65 @@
+@startuml Component Diagram - Expense Tracker
+
+skinparam component {
+    BackgroundColor #F0EBF8
+    BorderColor #5B2D8E
+    ArrowColor #5B2D8E
+    FontColor #222222
+}
+skinparam package {
+    BackgroundColor #FAF8FF
+    BorderColor #7B5EA7
+    FontColor #333333
+}
+skinparam database {
+    BackgroundColor #EDF7ED
+    BorderColor #2E7D32
+    FontColor #222222
+}
+skinparam title {
+    FontSize 18
+    FontStyle Bold
+}
+
+title Component Diagram – Expense Tracker Application
+
+package "Frontend (Flutter Mobile App)" {
+    [Login Screen] as LS
+    [Signup Screen] as SS
+    [Home Screen] as HS
+    [Add Expense Screen] as AES
+
+    LS --> HS : navigate on success
+    SS --> LS : redirect after register
+    HS --> AES : navigate to add expense
+    AES --> HS : navigate back
+}
+
+package "Backend Services (Firebase)" {
+    [Firebase Authentication] as FA
+    [Firebase Firestore] as FF
+    [Firebase Core] as FC
+}
+
+package "Database (Firebase Cloud Firestore)" {
+    database "users/{uid}/expenses" as DB_Expenses
+    database "users/{uid}/profile" as DB_Profile
+}
+
+' Frontend → Backend connections
+LS ..> FA : signInWithEmailAndPassword()
+SS ..> FA : createUserWithEmailAndPassword()
+HS ..> FA : signOut()
+HS ..> FF : getExpensesStream()
+HS ..> FF : deleteExpense()
+AES ..> FF : addExpense()
+
+' Backend → Database connections
+FA ..> DB_Profile : store / retrieve user profile
+FF ..> DB_Expenses : store / retrieve expense records
+
+' Firebase Core initialises all Firebase services
+FC ..> FA : initialises
+FC ..> FF : initialises
+
+@enduml

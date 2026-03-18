@@ -1,0 +1,72 @@
+@startuml Class Diagram - Expense Tracker
+
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor #F9F9FF
+    BorderColor #5B2D8E
+    ArrowColor #5B2D8E
+    FontColor #222222
+    HeaderBackgroundColor #D8C8F0
+}
+skinparam title {
+    FontSize 18
+    FontStyle Bold
+}
+
+title Class Diagram – Expense Tracker Application
+
+class User {
+    - userID : String
+    - username : String
+    - email : String
+    - password : String
+    --
+    + registerUser() : void
+    + loginUser() : bool
+    + logoutUser() : void
+}
+
+class Expense {
+    - expenseID : String
+    - title : String
+    - amount : double
+    - category : String
+    - date : String
+    - timestamp : DateTime
+    --
+    + addExpense() : void
+    + deleteExpense() : void
+    + viewExpense() : Expense
+}
+
+class Category {
+    - categoryID : String
+    - categoryName : String
+    --
+    + addCategory() : void
+    + updateCategory() : void
+    + getCategories() : List<Category>
+}
+
+class FirebaseAuth {
+    + signInWithEmailAndPassword(email, password) : UserCredential
+    + createUserWithEmailAndPassword(email, password) : UserCredential
+    + signOut() : void
+    + currentUser : User
+}
+
+class FirebaseFirestore {
+    + collection(path) : CollectionReference
+    + add(data) : DocumentReference
+    + delete() : void
+    + snapshots() : Stream
+}
+
+User "1" --> "0..*" Expense : records >
+User "1" --> "0..*" Category : uses >
+Expense "0..*" --> "1" Category : belongs to >
+User ..> FirebaseAuth : authenticates via >
+Expense ..> FirebaseFirestore : stored in >
+Category ..> FirebaseFirestore : stored in >
+
+@enduml
