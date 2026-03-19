@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,10 +11,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static final _dateFormat = DateFormat('yyyy/MM/dd - EEEE');
+
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
   User? user;
   double totalExpenses = 0.0;
+  late Stream<QuerySnapshot> _expensesStream;
 
   bool selectionMode = false;
   Set<String> selectedDocs = {};
@@ -22,24 +26,20 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     user = _auth.currentUser;
-  }
-
-  Stream<QuerySnapshot> getExpensesStream() {
-    return _firestore
-        .collection('users')
-        .doc(user!.uid)
-        .collection('expenses')
+    _expensesStream = _expensesCollection()
         .orderBy('timestamp', descending: true)
         .snapshots();
   }
 
-  void _deleteExpense(String docId) {
-    _firestore
+  CollectionReference _expensesCollection() {
+    return _firestore
         .collection('users')
         .doc(user!.uid)
-        .collection('expenses')
-        .doc(docId)
-        .delete();
+        .collection('expenses');
+  }
+
+  void _deleteExpense(String docId) {
+    _expensesCollection().doc(docId).delete();
   }
 
   Future<void> _deleteSelectedExpenses() async {
@@ -64,9 +64,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (confirm == true) {
+      final batch = _firestore.batch();
       for (var docId in selectedDocs) {
-        _deleteExpense(docId);
+        batch.delete(_expensesCollection().doc(docId));
       }
+      await batch.commit();
       setState(() {
         selectedDocs.clear();
         selectionMode = false;
@@ -79,10 +81,6 @@ class _HomeScreenState extends State<HomeScreen> {
       selectedDocs.clear();
       selectionMode = false;
     });
-  }
-
-  void _refreshExpenses() {
-    setState(() {});
   }
 
   @override
@@ -125,12 +123,6 @@ class _HomeScreenState extends State<HomeScreen> {
               tooltip: "Delete Selected",
               onPressed: selectedDocs.isEmpty ? null : _deleteSelectedExpenses,
             ),
-          if (!selectionMode)
-            IconButton(
-              iconSize: 30,
-              icon: const Icon(Icons.refresh, color: Colors.white),
-              onPressed: _refreshExpenses,
-            ),
           IconButton(
             iconSize: 30,
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -142,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: getExpensesStream(),
+        stream: _expensesStream,
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
@@ -193,7 +185,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     itemCount: docs.length,
                     itemBuilder: (context, index) {
                       final data = docs[index].data() as Map<String, dynamic>;
-                      final expenseDate = data['date'] ?? '';
+                      final ts = data['timestamp'];
+                      final expenseDate = ts != null
+                          ? _dateFormat.format((ts as Timestamp).toDate())
+                          : '';
                       final docId = docs[index].id;
                       final isSelected = selectedDocs.contains(docId);
 
