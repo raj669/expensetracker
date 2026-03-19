@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
@@ -50,7 +49,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     try {
       final now = DateTime.now();
-      final formattedDate = DateFormat('yyyy/MM/dd - EEEE').format(now);
 
       await _firestore
           .collection('users')
@@ -61,7 +59,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         'amount': amount,
         'category': category,
         'timestamp': now,
-        'date': formattedDate,
       });
 
       // Clear fields
