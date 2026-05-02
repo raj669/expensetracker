@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import '../models/category.dart';
+import '../models/expense_model.dart';
+import '../widgets/charts_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool selectionMode = false;
   Set<String> selectedDocs = {};
+  bool _showCharts = false;
 
   @override
   void initState() {
@@ -108,6 +112,20 @@ class _HomeScreenState extends State<HomeScreen> {
           if (!selectionMode)
             IconButton(
               iconSize: 30,
+              icon: Icon(
+                _showCharts ? Icons.list : Icons.bar_chart,
+                color: Colors.white,
+              ),
+              tooltip: _showCharts ? "Show List" : "Show Charts",
+              onPressed: () {
+                setState(() {
+                  _showCharts = !_showCharts;
+                });
+              },
+            ),
+          if (!selectionMode)
+            IconButton(
+              iconSize: 30,
               icon: const Icon(Icons.select_all, color: Colors.white),
               tooltip: "Select Expenses",
               onPressed: () {
@@ -141,10 +159,9 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           final docs = snapshot.data!.docs;
-          totalExpenses = docs.fold(0.0, (sum, doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            return sum + (data['amount'] ?? 0);
-          });
+          final expenses =
+              docs.map((d) => ExpenseModel.fromDoc(d)).toList();
+          totalExpenses = expenses.fold(0.0, (sum, e) => sum + e.amount);
 
           return Padding(
             padding: const EdgeInsets.all(16),
@@ -180,107 +197,124 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: docs.length,
-                    itemBuilder: (context, index) {
-                      final data = docs[index].data() as Map<String, dynamic>;
-                      final ts = data['timestamp'];
-                      final expenseDate = ts != null
-                          ? _dateFormat.format((ts as Timestamp).toDate())
-                          : '';
-                      final docId = docs[index].id;
-                      final isSelected = selectedDocs.contains(docId);
+                if (_showCharts)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: ChartsWidget(expenses: expenses),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: docs.length,
+                      itemBuilder: (context, index) {
+                        final expense = expenses[index];
+                        final expenseDate =
+                            _dateFormat.format(expense.timestamp);
+                        final docId = docs[index].id;
+                        final isSelected = selectedDocs.contains(docId);
 
-                      return Card(
-                        elevation: isSelected ? 10 : 4,
-                        shadowColor:
-                            isSelected ? Colors.deepPurpleAccent : Colors.grey,
-                        shape: RoundedRectangleBorder(
-                          side: isSelected
-                              ? const BorderSide(
-                                  color: Colors.deepPurple, width: 2)
-                              : BorderSide.none,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        color:
-                            isSelected ? Colors.deepPurple[50] : Colors.white,
-                        child: ListTile(
-                          onLongPress: () {
-                            setState(() {
-                              selectionMode = true;
-                              selectedDocs.add(docId);
-                            });
-                          },
-                          onTap: selectionMode
-                              ? () {
-                                  setState(() {
-                                    if (isSelected) {
-                                      selectedDocs.remove(docId);
-                                      if (selectedDocs.isEmpty)
-                                        selectionMode = false;
-                                    } else {
-                                      selectedDocs.add(docId);
-                                    }
-                                  });
-                                }
-                              : null,
-                          leading: selectionMode
-                              ? Checkbox(
-                                  value: isSelected,
-                                  activeColor: Colors.deepPurple,
-                                  onChanged: (val) {
+                        return Card(
+                          elevation: isSelected ? 10 : 4,
+                          shadowColor: isSelected
+                              ? Colors.deepPurpleAccent
+                              : Colors.grey,
+                          shape: RoundedRectangleBorder(
+                            side: isSelected
+                                ? const BorderSide(
+                                    color: Colors.deepPurple, width: 2)
+                                : BorderSide.none,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          color: isSelected
+                              ? Colors.deepPurple[50]
+                              : Colors.white,
+                          child: ListTile(
+                            onLongPress: () {
+                              setState(() {
+                                selectionMode = true;
+                                selectedDocs.add(docId);
+                              });
+                            },
+                            onTap: selectionMode
+                                ? () {
                                     setState(() {
-                                      if (val == true) {
-                                        selectedDocs.add(docId);
-                                      } else {
+                                      if (isSelected) {
                                         selectedDocs.remove(docId);
-                                        if (selectedDocs.isEmpty)
+                                        if (selectedDocs.isEmpty) {
                                           selectionMode = false;
+                                        }
+                                      } else {
+                                        selectedDocs.add(docId);
                                       }
                                     });
-                                  },
-                                )
-                              : null,
-                          title: Text(
-                            data['title'],
-                            style: TextStyle(
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.w600,
-                                fontSize: 18,
-                                color: isSelected
-                                    ? Colors.deepPurple
-                                    : Colors.black),
-                          ),
-                          subtitle: Text(
-                            '${data['category']} • $expenseDate',
-                            style: const TextStyle(
-                                fontSize: 14, color: Colors.black87),
-                          ),
-                          trailing: selectionMode
-                              ? null
-                              : Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      '\$${(data['amount'] ?? 0).toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16),
+                                  }
+                                : null,
+                            leading: selectionMode
+                                ? Checkbox(
+                                    value: isSelected,
+                                    activeColor: Colors.deepPurple,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        if (val == true) {
+                                          selectedDocs.add(docId);
+                                        } else {
+                                          selectedDocs.remove(docId);
+                                          if (selectedDocs.isEmpty) {
+                                            selectionMode = false;
+                                          }
+                                        }
+                                      });
+                                    },
+                                  )
+                                : CircleAvatar(
+                                    backgroundColor: Colors.deepPurple[50],
+                                    child: Text(
+                                      ExpenseCategory.getEmoji(
+                                          expense.category),
+                                      style: const TextStyle(fontSize: 20),
                                     ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete,
-                                          color: Colors.red),
-                                      onPressed: () => _deleteExpense(docId),
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      );
-                    },
+                                  ),
+                            title: Text(
+                              expense.title,
+                              style: TextStyle(
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w600,
+                                  fontSize: 18,
+                                  color: isSelected
+                                      ? Colors.deepPurple
+                                      : Colors.black),
+                            ),
+                            subtitle: Text(
+                              '${expense.category} • $expenseDate',
+                              style: const TextStyle(
+                                  fontSize: 14, color: Colors.black87),
+                            ),
+                            trailing: selectionMode
+                                ? null
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '\$${expense.amount.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete,
+                                            color: Colors.red),
+                                        onPressed: () =>
+                                            _deleteExpense(docId),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
               ],
             ),
           );
