@@ -39,6 +39,8 @@ class _SignupScreenState extends State<SignupScreen> {
       // Update displayName with username
       await userCredential.user?.updateDisplayName(username);
 
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Welcome, $username! Your account is created.')),
       );
@@ -48,11 +50,12 @@ class _SignupScreenState extends State<SignupScreen> {
         MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Signup failed: $e')));
     }
 
-    setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override

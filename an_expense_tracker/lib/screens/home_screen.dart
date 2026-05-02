@@ -73,6 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
         batch.delete(_expensesCollection().doc(docId));
       }
       await batch.commit();
+      if (!mounted) return;
       setState(() {
         selectedDocs.clear();
         selectionMode = false;
@@ -146,6 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () async {
               await _auth.signOut();
+              if (!mounted) return;
               Navigator.pushReplacementNamed(context, '/');
             },
           ),

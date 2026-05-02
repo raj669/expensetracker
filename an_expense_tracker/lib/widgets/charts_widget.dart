@@ -226,7 +226,7 @@ class _ChartsWidgetState extends State<ChartsWidget> {
                         dotData: const FlDotData(show: false),
                         belowBarData: BarAreaData(
                           show: true,
-                          color: Colors.deepPurple.withOpacity(0.15),
+                          color: Colors.deepPurple.withValues(alpha: 0.15),
                         ),
                       ),
                     ],

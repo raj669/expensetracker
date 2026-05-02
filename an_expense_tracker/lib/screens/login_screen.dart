@@ -35,8 +35,9 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
 
-      final user = userCredential.user;
-      final username = user?.displayName ?? "User";
+      if (!mounted) return;
+
+      final username = userCredential.user?.displayName ?? "User";
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Welcome back, $username!')),
@@ -47,12 +48,13 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Login failed: $e')),
       );
     }
 
-    setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override
